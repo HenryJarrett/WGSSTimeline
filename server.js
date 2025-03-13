@@ -28,5 +28,36 @@ app.get('/events', (req, res) => {
     });
 });
 
+app.post('/events', (req, res) => {
+    const { title, description, date, link1, link1_desc, link2, link2_desc, link3, link3_desc, image } = req.body;
+    const sql = "INSERT INTO events (name, description, date, link1, link1_desc, image_url) VALUES (?, ?, ?, ?, ?, ?)";
+
+    db.query(sql, [title, description, date, link1, link1_desc, link2, link2_desc, link3, link3_desc, image], (err, result) => {
+        if (err) return res.status(500).send(err);
+        res.json({ id: result.insertId, message: "Event added successfully!" });
+    });
+});
+
+app.put('/events/:id', (req, res) => {
+    const { title, description, date, link1, link1_desc, image_url } = req.body;
+    const sql = "UPDATE events SET name=?, description=?, date=?, link1=?, link1_desc=?, image_url=? WHERE id=?";
+    
+    db.query(sql, [title, description, date, link1, link1_desc, image_url, req.params.id], (err, result) => {
+        if (err) return res.status(500).send(err);
+        res.json({ message: "Event updated successfully!" });
+    });
+});
+
+app.delete('/events/:id', (req, res) => {
+    const sql = "DELETE FROM events WHERE id=?";
+
+    db.query(sql, [req.params.id], (err, result) => {
+        if (err) return res.status(500).send(err);
+        res.json({ message: "Event deleted successfully!" });
+    });
+});
+
+
+
 app.listen(3000, () => console.log('Server running on port 3000'));
 

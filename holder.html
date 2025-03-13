@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timeline</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .title-container { background-color: #141414; color: white; padding: 100px; font-size: 69px; font-weight: bold; text-align: center; width: 100%; }
+        .timeline { display: flex; overflow-x: scroll; white-space: nowrap; padding: 20px; }
+        .event { margin: 10px; padding: 10px; border: 1px solid #ccc; cursor: pointer; display: flex; flex-direction: column; align-items: center; min-width: 400px; max-width: 700px;}
+        .event .date { font-weight: bold; margin-bottom: 5px; }
+        .description { display: none; word-wrap: break-word; min-width:300px; max-width: 600px; white-space: normal; }
+        .event .name { font-weight: bold; word-wrap: break-word; max-width: 100%; text-align: center; }
+        .links { display: none; margin-top: 10px; }
+        .event img {
+                width: auto;
+                height: 200px;
+                object-fit: cover;
+                margin: 10px 0;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="title-container">A Feminist Timeline</div>
+    <div class="timeline" id="timeline"></div>
+     <div id="event-form-container" style="display: none;">
+        <h2 id="form-title">Add Event</h2>
+        <form id="event-form">
+            <input type="hidden" id="event-id">
+
+            <label for="name">Title:</label>
+            <input type="text" id="name" required>
+
+            <label for="description">Description:</label>
+            <textarea id="description" required></textarea>
+
+            <label for="date1">Date:</label>
+            <input type="date" id="date1" required>
+
+            <label for="image_url">Image (filename):</label>
+            <input type="text" id="image_url" placeholder="example.jpg">
+
+            <label for="link1">Link:</label>
+            <input type="text" id="link1" required>
+
+            <label for="linkdesc1">Link Description (blank.com):</label>
+            <input type="text" id="linkdesc1">
+
+            <button type="submit">Save</button>
+            <button type="button" id="cancel-btn">Cancel</button>
+        </form>
+    </div>
+
+    <!-- Add Event Button -->
+    <button id="add-event-btn">+ Add Event</button>
+    <script>
+        // JavaScript to handle form display and submission
+        document.getElementById('add-event-btn').addEventListener('click', () => {
+            document.getElementById('event-id').value = '';
+            document.getElementById('form-title').innerText = "Add Event";
+            document.getElementById('event-form-container').style.display = 'block';
+        });
+
+        document.getElementById('cancel-btn').addEventListener('click', () => {
+            document.getElementById('event-form-container').style.display = 'none';
+        });
+
+        document.getElementById('event-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const eventId = document.getElementById('event-id').value;
+            const data = {
+                name: document.getElementById('name').value,
+                description: document.getElementById('description').value,
+                date1: document.getElementById('date1').value,
+                image_url: document.getElementById('image_url').value,
+                link1: document.getElementById('link1').value,
+                linkdesc1: document.getElementById('linkdesc1').value
+            };
+
+            fetch(eventId ? `http://localhost:3000/events/${eventId}` : 'http://localhost:3000/events', {
+                method: eventId ? 'PUT' : 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            }).then(() => location.reload());
+        });
+	function openEditForm(eventId, event) {
+			    
+    document.getElementById('event-id').value = eventId;
+    document.getElementById('name').value = event.name;
+    document.getElementById('description').value = event.description;
+    document.getElementById('date1').value = event.formatted_date.split('/').reverse().join('-');
+    document.getElementById('image_url').value = event.image_url;
+    document.getElementById('link1').value = event.link1;
+    document.getElementById('linkdesc1').value = event.linkdesc1;
+    document.getElementById('form-title').innerText = "Edit Event";
+    document.getElementById('event-form-container').style.display = 'block';
+		    }
+	
+        fetch('http://localhost:3000/events')
+                    .then(response => response.json()).then(events => {
+                                        const timeline = document.getElementById('timeline');
+                                        events.forEach(event => {
+                                        const div = document.createElement('div');
+                                        div.classList.add('event');
+                        
+
+           let linksHTML = '';
+                    [
+                        { url: event.link1, desc: event.linkdesc1 },
+                        { url: event.link2, desc: event.linkdesc2 },
+                        { url: event.link3, desc: event.linkdesc3 }
+                    ].forEach(link => {
+                        if (link.url) {
+                            linksHTML += `<p><a href="${link.url}" target="_blank">${link.desc || 'More info'}</a></p>`;
+                        }
+                    });
+
+	    
+            function formatDescription(text, maxLength) {
+                const words = text.split(' ');
+                        let formattedText = '';
+                        let line = '';
+
+                        words.forEach(word => {
+                            if ((line + word).length > maxLength) {
+                                formattedText += line.trim() + '\n';
+                                line = word + ' ';
+                            } else {
+                                line += word + ' ';
+                            }
+                        });
+                        formattedText += line.trim();
+                        return formattedText;
+                    }
+
+                        div.innerHTML = `<img src="${event.image_url}" alt="${event.name}" class="event-image"> 
+                                <div class='name'>${event.name}</div>
+                                <div class='date'>${event.formatted_date}</div>
+                                <p class='description'>${formatDescription(event.description, 100)}</p>
+                                <div class='links'>${linksHTML}</div>
+                                <button class="edit-btn" data-id="${event.id})">Edit</button>
+                                <button class="delete-btn" data-id="${event.id}">Delete</button>
+                                                                    `;                   
+            div.addEventListener('click', () => {
+                const desc = div.querySelector('.description');
+                desc.style.display = desc.style.display === 'block' ? 'none' : 'block';
+            });
+
+             div.querySelector('.delete-btn').addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevents event toggle when clicking delete
+                const eventId = e.target.getAttribute('data-id');
+                fetch(`http://localhost:3000/events/${eventId}`, { method: 'DELETE' })
+                    .then(() => location.reload());
+            });
+	    div.querySelector('.edit-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                const eventId = e.target.getAttribute('data-id');
+                openEditForm(eventId, event);
+            });
+
+            timeline.appendChild(div);
+        });
+    });
+
+
+    </script>
+</body>
+</html>
+
